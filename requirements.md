@@ -1,5 +1,5 @@
-# Requirements
-Note: Currently just a copy of "pain points" from presentation in https://github.com/webmachinelearning/hybrid-ai/pull/4 - needs elaboration.
+# Requirements (DRAFT)
+See also "pain points" from presentation in https://github.com/webmachinelearning/hybrid-ai/pull/4.
 
 Generally: saving space/download latency
 1. Sharing/reusing large models
