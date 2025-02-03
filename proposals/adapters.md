@@ -265,7 +265,8 @@ There are two ways to apply an adapter to a model:
   a version would have to be compiled taking into account a potential adapter.
   However, this approach can also work with quantized base models without
   having to "unpack" them.
-The proposed API permits either implementation approach.
+  
+The proposed API permits either implementation approach, or potential hybrids of them.
 
 ## Design Alternatives
 There are a few possible alternatives to discuss:
