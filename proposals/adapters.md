@@ -1,7 +1,7 @@
 # Adapters
 
 ## Problem Statement
-LLMs are large and this poses various challenges for using them in the web environment as dynamically downloaded models.
+Some AI, such as LLMs, are very large and this poses various challenges for using them in the web environment as dynamically downloaded models.
 This is exacerbated by the web design principle of Storage Partitioning (Reference 6),
 which seeks to isolate the local client storage for each origin to avoid cross-site tracking privacy risks such as fingerprinting.
 At the same time, use of AI models locally can provide privacy benefits by avoiding sending sensitive data to the cloud.
@@ -48,13 +48,13 @@ The use cases of adapters are as follows:
         there is the opportunity to provide an additional API to serialized/deserialize or otherwise recall
         a pre-compiled graph (if this is done from existing storage mechanisms there is no additional fingerprinting risk),
         avoiding the compilation cost and providing more implementation flexibility.
-3. The base model, represented as a precompiled `MLGraph` object,
+2. The base model, represented as a precompiled `MLGraph` object,
    is retrieved from a (proposed, new, model-specific) cache (Reference 4) and then the adapter is applied to
    modify it for a specific purpose.
       - In this case the cache implementation, if it allows for
         cross-site sharing, may implement some fingerprinting mitigation mechanisms but the adapter could be
         stored per-origin, avoiding the need for these mitigations.
-5. The base model is bound to the browser and is shared cross-site,
+3. The base model is bound to the browser and is shared cross-site,
    with the privacy risk mitigated as noted above.
       - Adapters can then be stored per-origin, using normal local web caching mechanisms.
       - This could be an extension of the proposed Prompt API (Reference 5).
@@ -119,7 +119,7 @@ Use of a data-dependent hash as a name avoids issues
 with cross-site caches being used to exfiltrate data between sites, as well
 as validating the model.
 
-### Browser-Bound Models
+### Use Case 3: Browser-Bound Models
 To support browser-bound models,
 the proposed APIs could be extended to retrieve such models given an identifier for that model.
 In the following we assume an API is provided to retrieve a model, represented as an `MLGraph` object.
