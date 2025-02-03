@@ -1,7 +1,7 @@
 # Adapters
 
 ## Problem Statement
-Some AI, such as LLMs, are very large and this poses various challenges for using them in the web environment as dynamically downloaded models.
+Some AI models, such as LLMs, are very large and this poses various challenges for using them in the web environment as dynamically downloaded models.
 This is exacerbated by the web design principle of Storage Partitioning (Reference 6),
 which seeks to isolate the local client storage for each origin to avoid cross-site tracking privacy risks such as fingerprinting.
 At the same time, use of AI models locally can provide privacy benefits by avoiding sending sensitive data to the cloud.
