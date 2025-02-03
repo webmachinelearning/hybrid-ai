@@ -245,7 +245,7 @@ This assumes the base model is known or can be specified in the Prompt API.
   It also hides some of the details of the base model, in particular the operation and the actual weights,
   as well as the connection topology.
   It is necessary however to reveal at least the size of the weight tensors.
-- When the adapter is applied, there is an implied asynchronoud step which would compile the new model.
+- When the adapter is applied, there is an implied asynchronous step which would compile the new model.
   An adapter application would, as with building a model from scratch,
   "consume" (transfer ownership) of the memory used to represent the adapter representation.
   
