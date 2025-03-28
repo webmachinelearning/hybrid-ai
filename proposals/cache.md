@@ -106,7 +106,8 @@ a specific model that may or may not already be in the cache.  In the following
 we assume hashes are computed using SHA-256, which should be sufficient.  The method to
 compute the hash will be defined by the standard so it is consistent on all platforms -
 this is necessary so an application can look up the hash on a model server independent
-of the platform.
+of the platform.  Hash names will be checked first, and then user-provided names, so it 
+is possible (if a developer does it intentionally) for a hash to shadow a user-provided name.
 
 If for any reason a `loadGraph` cannot be completed an exception will be thrown to reject the promise.
 These should be consistent with those used for the `build` method for different failure modes.
