@@ -80,16 +80,16 @@ deterministic data-dependent hash key that could also be used for retreival (wit
 If no user-provided key is given, then the hash must be used for retreival.
 
 If the same graph is "saved" more than once with a different user-provided key than the
-latest user-provided key is used and older keys are lost, e.g. the function will act like a "rename".  
+latest user-provided key is used and older keys are lost, e.g. the function will act like a "rename".
 The hash key will not change in this case, and the system may also skip recompilation.
 
 An implementation may choose not to store any particular model (for example, a model may be too
 large to fit in the available storage).  In this case the method still succeeds but the empty string
-may be returned as the "hash" (to avoid the system having to compute the hash for models that 
+may be returned as the "hash" (to avoid the system having to compute the hash for models that
 are not stored).  An empty string cannot be used as a user-provided key.
 
 ### hashGraph
-Access the hash key for an existing graph.  This is a convenience function in case the 
+Access the hash key for an existing graph.  This is a convenience function in case the
 graph is built inside a library and it is not possible to access and modify the call to
 `saveGraph`.   For the same `MLGraph` object this always returns the same string.
 
@@ -97,7 +97,7 @@ graph is built inside a library and it is not possible to access and modify the 
 Allows a model to be retrieved from the cache using either the hash key or the user-defined
 key.
 
-Hashes are deterministic so it is also possible to treat the hash as the name of 
+Hashes are deterministic so it is also possible to treat the hash as the name of
 a specific model that may or may not already be in the cache.  In the following
 we assume hashes are computed using SHA-256, which should be sufficient.  The method to
 compute the hash will be defined by the standard so it is consistent on all platforms -
