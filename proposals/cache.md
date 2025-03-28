@@ -60,72 +60,90 @@ described in the IDL below:
 partial interface MLContext {
   Promise<MLGraph> loadGraph(DOMString key);
   Promise<DOMString> saveGraph(MLGraph graph, optional DOMString key);
+  Promise<DOMString> hashGraph(MLGraph graph);
   undefined deleteGraph(DOMString key);
   undefined deleteSavedGraphs();  // of this origin
 };
 ```
 In the following each method is discussed.
 
-### Store
-The following additional method on `MLGraph`
-would allow storing a model in the cache, returning
-a hash of the model that can be used as a key:
-```js
-const hash = graph.store()
-```
-This API intentionally does not specify a storage location, file system handle, or the like.
+### saveGraph
+This method intentionally does not specify a storage location, file system handle, or the like.
 Models are stored in an opaque serialization and in an unspecified location that does
 not count against the overall storage quota of the origin.
 Depending on various factors, the system may also choose not to store particular models;
 see "Implementation Notes".
 
-NOTE: One design alternative omits this method, and instead automatically attempts to
-cache ALL models.  See later discussion.
+The user-provided key is optional.  In all cases, the system would compute and return a
+deterministic data-dependent hash key that could also be used for retreival (with some caveats discussed later).
+If no user-provided key is given, then the hash must be used for retreival.
 
-### Fetch
-Later, the model can be retrieved from the cache using the hash.  This would
-behave similarily to `build`:
-```js
-graph = await builder.fetch(hash);
-```
+If the same graph is "saved" more than once with a different user-provided key than the
+latest user-provided key is used and older keys are lost, e.g. the function will act like a "rename".  
+The hash key will not change in this case, and the system may also skip recompilation.
+
+An implementation may choose not to store any particular model (for example, a model may be too
+large to fit in the available storage).  In this case the method still succeeds but the empty string
+may be returned as the "hash" (to avoid the system having to compute the hash for models that 
+are not stored).  An empty string cannot be used as a user-provided key.
+
+### hashGraph
+Access the hash key for an existing graph.  This is a convenience function in case the 
+graph is built inside a library and it is not possible to access and modify the call to
+`saveGraph`.   For the same `MLGraph` object this always returns the same string.
+
+### loadGraph
+Allows a model to be retrieved from the cache using either the hash key or the user-defined
+key.
 
 Hashes are deterministic so it is also possible to treat the hash as the name of 
 a specific model that may or may not already be in the cache.  In the following
-we assume hashes are computed using SHA-256, which should be sufficient:
-```js
-graph = await builder.fetch("2ff2366c-3acb-4a58-93ac-53971b0e1b18");
-```
-Use of a data-dependent hash as a name avoids issues
-with cached models being used as large cookies, as well
-as ensuring that the model is validated and is the model expected (and not
-a modified, potentially malicious model given the same name).
-For potential extension to the cross-origin use case, use of hashes also prevents the
-use of the cache for data exfiltration.
+we assume hashes are computed using SHA-256, which should be sufficient.  The method to
+compute the hash will be defined by the standard so it is consistent on all platforms -
+this is necessary so an application can look up the hash on a model server independent
+of the platform.
 
-The `builder` in the above examples is an object with the WebNN `MLGraphBuilder` interface.
-The context of this builder should be compatible with the context under which the
-original graph was stored, in particular it should support the same target devices.
-The returned graph object will appear as if it had been built by the provided `MLGraphBuilder` interface.
-
-If for any reason a `fetch` cannot be completed, including device incompatibility (e.g. the 
-previously stored model was compiled for a different device) the `fetch` function will return a 
-`null` value.
-
-NOTE: Consider throwning an exception instead of returning `null`.  Should be consistent with
-the `build` method of `MLGraphBuilder`, which rejects the promise and throws various exceptions
-for different failure modes.  The most likely failure mode, given by definition the model should
+If for any reason a `loadGraph` cannot be completed an exception will be thrown to reject the promise.
+These should be consistent with those used for the `build` method for different failure modes.
+The most likely failure mode, given by definition the model should
 have previously be successfully compiled, is in Step 16 of Section 7.7.4 "build method"
 of (Reference 4), which returns an `"OperationError" DOMException`.
 
-It is also possible that a model previously stored in a the cache may not be available
+It is also possible that a model previously stored in the cache may not be available
 for fetching later, either because it was flushed or was not stored for implementation-defined
-reasons.
+reasons.  
 
-NOTE: If exceptions are used to signal errors, additional exception classes might be
-needed to signal additional sources of error, such as the model not being in the cache.
-However, this could also be used for "probing" attacks (fingerprinting a system by what models seem 
-to be in the cache) so it might be best from a privacy
-point of view to consolidate error types.
+To allow for a "null" no-cache implementation, an implementation may choose
+to not implement a cache at all and always throw exceptions for this method, even for
+`MLGraph` objects that were just saved and are still live in the current session.
+
+The `loadGraph` method will always throw an exception for the empty string "hash" that may
+be returned by a refused `storeGraph` operation.
+
+## deleteGraph
+Given either the user-provided key or the hash key, a model is removed from the cache.
+This method always succeeds, even if the model was not originally in the cache (this is to avoid
+someone using the delete operation as a cache probe) or is no longer in the cache.
+Idempotent.
+
+## deleteSavedGraphs
+Delete all graphs of this origin.  Always succeeds, even if the cache is empty.
+Idempotent.
+
+## Design Considerations
+Use of a data-dependent hash as a name avoids issues
+with cached models being used as large cookies, as well
+as ensuring that the model is validated and is the model expected (and not
+a modified, potentially malicious model given the same name).  It also strengthens
+protections against fingerprinting and tracking.
+
+If arbitrary user-defined keys are used, then the cache essentially becomes a key-value store,
+and may be subject to the same privacy controls as cookies and localStorage, e.g. requiring
+user consent to use.  So user-defined keys are provided as a convenience feature for the developer but could
+potentially cause other inconveniences for the user.
+
+For potential extension to the cross-origin use case, use of hashes also prevents the
+use of the cache for data exfiltration.
 
 ### Privacy Mitigations
 - The WebNN API is already disallowed in third-party contexts, which mitigates
@@ -133,13 +151,14 @@ point of view to consolidate error types.
 - The presence of an item in the cache in theory could be used for tracking repeat
   visits by a particular user agent to the same site, by generating a random model
   and then computing and storing the hash on the server side.   However, note that
-  the API only checks for the existence of a given hash in the cache, it does not
+  the API only checks for the existence of a given hash in the cache, it (intentionally) does not
   provide a list of all items in the cache.  An attacker would have to "guess" at
   which hash is in the cache, and possibly test them one by one.  The API can limit
-  the number of attempts to retrieve models from the cache to avoid a system trying
+  the number of attempts to retrieve models from the cache to resist a system trying
   to exhaustively probe the cache.  This failure can be "soft" e.g. the cache can
   just stop trying to retrieve data after a certain number of attempts and let all
-  fetches "fail".
+  `loadGraph` calls "fail".  For the same reason `deleteGraph` calls always succeed
+  to avoid having them being used as probes.
 
 ## Extensions for XSS Case
 Although not a primary goal, it is worth thinking about how the API might be extended to the 
@@ -165,10 +184,7 @@ partial interface MLContext {
 };
 ```
 
-### hashGraph
-Access the hash key for an existing graph.  This is a convenience function in case the 
-graph is built inside a library and it is not possible to access and modify the call to
-`saveGraph`.
+
 
 ### loadGraph
 The hash key would be required to access the full cross-origin cache.  If a non-hash name is
