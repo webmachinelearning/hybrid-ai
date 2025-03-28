@@ -86,7 +86,11 @@ The hash key will not change in this case, and the system may also skip recompil
 An implementation may choose not to store any particular model (for example, a model may be too
 large to fit in the available storage).  In this case the method still succeeds but the empty string
 may be returned as the "hash" (to avoid the system having to compute the hash for models that
-are not stored).  An empty string cannot be used as a user-provided key.
+are not stored).  
+
+An empty string cannot be used as a user-provided key.  If such as string is provided
+as the user-defined key it will be ignored and the behavior will be the same as if the 
+optional argument were omitted.
 
 ### hashGraph
 Access the hash key for an existing graph.  This is a convenience function in case the
