@@ -136,11 +136,15 @@ This method always succeeds, even if the model was not originally in the cache (
 someone using the delete operation as a cache probe) or is no longer in the cache.
 Idempotent.
 
+Subsequent loads for these keys will fail unless the graph is saved again.
+
 Note: an implementation may choose to delete saved models automatically for any reason.
 
 ## deleteSavedGraphs
 Delete all graphs of this origin.  Always succeeds, even if the cache is empty.
 Idempotent.
+
+All subsequent loads will fail until new models are saved.
 
 ## Design Considerations
 Use of a data-dependent hash as a name avoids issues
