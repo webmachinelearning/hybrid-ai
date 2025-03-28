@@ -77,7 +77,7 @@ see "Implementation Notes".
 
 The user-provided key is optional.  In all cases, the system would compute and return a
 deterministic data-dependent hash key that could also be used for retreival (with some caveats discussed later).
-If no user-provided key is given, then the hash must be used for retreival.
+If no user-provided key is given, then the hash *must* be used for retreival.
 
 If the same graph is "saved" more than once with a different user-provided key than the
 latest user-provided key is used and older keys are lost, e.g. the function will act like a "rename".
