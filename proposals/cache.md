@@ -84,7 +84,7 @@ latest user-provided key is used and older keys are lost, e.g. the function will
 The hash key will not change in this case, and the system may also skip recompilation.
 
 If a graph is saved with the same user-provided name as a graph already in the cache the new
-graph will be one accessed by the user-provided name.  The old graph may still be accessible 
+graph will be new one accessed by the user-provided name.  The old graph may still be accessible 
 using its hash (e.g. it will not necessarily be automatically deleted).
 
 An implementation may choose not to store any particular model (for example, a model may be too
