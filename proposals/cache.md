@@ -19,7 +19,7 @@ Currently, the best known practice to preserve privacy is to use
 Client-Side Storage Partitioning (Reference 3), where every origin has its own storage.   
 
 This initial proposal is suitable for the partitioned storage model and is presented that way.
-However, in a later some extensions to support cross-origin sharing are proposed that attempt
+However, later in the document some extensions to support cross-origin sharing are proposed that attempt
 to mitigate various privacy risks.  
 
 ## Use Cases
