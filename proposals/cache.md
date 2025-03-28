@@ -5,8 +5,8 @@ persistent storage.
 ## Problem Statement
 Models can be large and in many cases we would like to reuse previously downloaded models.
 While a loader library can store and retrieve models prior to building model graphs, 
-this potentially results in duplicated storage.  Also storing and retrieving models
-prior to building forces the recompilation to happen upon every use.  It would be useful
+this potentially results in duplicated storage.  Also, storing and retrieving models
+prior to building forces the recompilation to happen every session.  It would be useful
 to have a local storage and retrieval mechanism that permits compilation to be bypassed as well.
 
 There are many possible approaches to caching data for reuse between sessions that can be 
@@ -19,16 +19,18 @@ Currently, the best known practice to preserve privacy is to use
 Client-Side Storage Partitioning (Reference 3), where every origin has its own storage.   
 
 This initial proposal is suitable for the partitioned storage model and is presented that way.
-Later we may consider extensions to support cross-origin sharing, if appropriate privacy mitigations can
-be defined.
+However, in a later some extensions to support cross-origin sharing are proposed that attempt
+to mitigate various privacy risks.  
 
 ## Use Cases
 
 ### Use Case 1: Same-Origin Reuse
-A developer may want to avoid redundant download (and possibly building) of a model that 
+A developer may want to avoid redundant download *and* compilation of a model that 
 may have previously been downloaded and built in a previous session by the same origin.
-Avoiding the download/build process improves the user experience and also reduces the load
+
+Avoiding the download process improves the user experience and also reduces the load
 on the network (and the potential cost to the user if data charges are applicable).
+Avoiding the build process improves the user experience by minimizing startup time.
 
 ### Use Case 2: Adapters
 Separately an API is being proposed to support adapters [5], based on PEFT representation such as LoRA.
@@ -40,19 +42,29 @@ The following use case is currently out of scope but may be considered in future
 
 ### Use Case X1: Cross-Origin Reuse
 Many models may be used by more than one developer, in the same way that software libraries
-may be shared. 
+may be shared.  Like software libraries, we expect models to be reused by different origins.
+However, models are much larger so the cost of duplicated storage is larger.
 
 ## Design Considerations
-- It should not be possible to use the cache for storage of data other than models.  In particular
-  we should avoid situations where the cache can be used for large cookies or trackers.
+- Ideally, it should not be possible to use the cache for storage of data other than models.
+  In particular we should avoid situations where the cache can be used for large cookies or trackers.
 - Loading a model from the cache should be as efficient as possible.
 - The API should be simple and easy to use.
-- While the proposed API does not support Use Case X1 (Cross-Origin Reuse), it should be possible
+- While the proposed API does not support Use Case X1 (Cross-Origin Reuse), ideally it should be possible
   to extend the API in the future to do so in a backward-compatible way.
   
 ## Proposed API
-The proposed API is based on two new methods, `store` on `MLGraph` objects
-and `fetch` on `MLGraphBuilder` objects.
+The proposed API is based on a set of methods on `MLContext` objects,
+described in the IDL below:
+```js
+partial interface MLContext {
+  Promise<MLGraph> loadGraph(DOMString key);
+  Promise<DOMString> saveGraph(MLGraph graph, optional DOMString key);
+  undefined deleteGraph(DOMString key);
+  undefined deleteSavedGraphs();  // of this origin
+};
+```
+In the following each method is discussed.
 
 ### Store
 The following additional method on `MLGraph`
@@ -115,9 +127,61 @@ However, this could also be used for "probing" attacks (fingerprinting a system 
 to be in the cache) so it might be best from a privacy
 point of view to consolidate error types.
 
-## Privacy Mitigations
+### Privacy Mitigations
 - The WebNN API is already disallowed in third-party contexts, which mitigates
   several scenarios in which the API can be abused for tracking.
+- The presence of an item in the cache in theory could be used for tracking repeat
+  visits by a particular user agent to the same site, by generating a random model
+  and then computing and storing the hash on the server side.   However, note that
+  the API only checks for the existence of a given hash in the cache, it does not
+  provide a list of all items in the cache.  An attacker would have to "guess" at
+  which hash is in the cache, and possibly test them one by one.  The API can limit
+  the number of attempts to retrieve models from the cache to avoid a system trying
+  to exhaustively probe the cache.  This failure can be "soft" e.g. the cache can
+  just stop trying to retrieve data after a certain number of attempts and let all
+  fetches "fail".
+
+## Extensions for XSS Case
+Although not a primary goal, it is worth thinking about how the API might be extended to the 
+cross-origin case while mitigating privacy risks.
+
+The primary change would be using data-dependent hashes as keys generated from the model.
+Within a session, user-provided keys could be used, but this would not provide access to 
+models stored in another origin.  In this case, the hash MUST be used.  This is to
+prevent the unauthorized exfiltration of bulk data between origins.
+
+In addition, a privacy-sensitive browser might require the use of hashes to access 
+models even for a single origin, in order to more strongly mitigate other risks, such
+as fingerprinting.  A browser may not strictly disallow the use of "friendly" names to
+retrieve items from the cache, but may choose to require user consent.
+
+With this in mind, the proposed changes would be as follows.  First, there would
+be a new function to retreive the hash key for a model, as well as a small modification to
+`saveGraph`:
+```js
+partial interface MLContext {
+  Promise<DOMString> hashGraph(MLGraph graph);
+  Promise<DOMString> saveGraph(MLGraph graph, optional DOMString key);
+};
+```
+
+### hashGraph
+Access the hash key for an existing graph.  This is a convenience function in case the 
+graph is built inside a library and it is not possible to access and modify the call to
+`saveGraph`.
+
+### loadGraph
+The hash key would be required to access the full cross-origin cache.  If a non-hash name is
+used then only the models stored by the same origin would be accessible.
+We assume that user-provided names and hash names could be distinguished easily by their format.
+
+### saveGraph
+Same behavior as before, but now the user-provided key would be optional.  If the user-provided key is
+omitted then the hash is returned in the result string.
+
+### Privacy Considerations
+- The number of "probes" of the cache should be rate-limited to avoid use of cache
+  presence of various models in the cache as fingerprinting information.
 - The presence of an item in the cache in theory could be used for tracking repeat
   visits by a particular user agent to the same site, by generating a random model
   and then computing and storing the hash on the server side.   However, note that
