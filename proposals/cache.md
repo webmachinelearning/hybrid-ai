@@ -158,10 +158,7 @@ and may be subject to the same privacy controls as cookies and localStorage, e.g
 user consent to use.  User-defined keys are provided as a convenience feature for the developer but could
 potentially cause other inconveniences for the user.
 
-For potential extension to the cross-origin use case, use of hashes also prevents the
-use of the cache for data exfiltration, so are mandatory in this case.  A developer using
-user-defined names will not be able to access models loaded in other origins, and so will
-always have to bear the download cost.
+
 
 ### Privacy Mitigations
 - The WebNN API is already disallowed in third-party contexts, which mitigates
@@ -192,6 +189,17 @@ In addition, a privacy-sensitive browser might require the use of hashes to acce
 models even for a single origin, in order to more strongly mitigate other risks, such
 as fingerprinting.  A browser may also not strictly disallow the use of "friendly" names to
 retrieve items from the cache, but may instead choose to require user consent.
+
+### Privacy Mitigations
+- A shared key-value store with arbitrary data-independent keys can be used for
+  exfiltrating large amounts of data from one origin to another.  The restriction
+  to only allow use of hashes as keys to non-same-origin models blocks data exfiltration
+  since to compute the hash key the data has to be known.  Therefore the key-value store
+  cannot be used to transmit *unknown* data.
+- For similar reasons, a tracking ID for a particular user is data which needs to be
+  independent of the key.  Forcing different data items to use different hash keys
+  and ALSO limiting cache probes and preventing enumeration blocks easy recovery
+  of a tracking ID left behind in another origin.
 
 ## Implementation Notes
 - This API can be implemented in (at least) four ways.  The proposed API is intentially designed to allow
