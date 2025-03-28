@@ -164,50 +164,16 @@ use of the cache for data exfiltration.
 Although not a primary goal, it is worth thinking about how the API might be extended to the 
 cross-origin case while mitigating privacy risks.
 
-The primary change would be using data-dependent hashes as keys generated from the model.
-Within a session, user-provided keys could be used, but this would not provide access to 
-models stored in another origin.  In this case, the hash MUST be used.  This is to
+The primary change would be *requiring* data-dependent hashes as keys to access models
+possibly loaded from another origin.
+Within a session, user-provided keys could be used, but such names would only be able to 
+load models saved from the same origin.  This is to
 prevent the unauthorized exfiltration of bulk data between origins.
 
 In addition, a privacy-sensitive browser might require the use of hashes to access 
 models even for a single origin, in order to more strongly mitigate other risks, such
-as fingerprinting.  A browser may not strictly disallow the use of "friendly" names to
-retrieve items from the cache, but may choose to require user consent.
-
-With this in mind, the proposed changes would be as follows.  First, there would
-be a new function to retreive the hash key for a model, as well as a small modification to
-`saveGraph`:
-```js
-partial interface MLContext {
-  Promise<DOMString> hashGraph(MLGraph graph);
-  Promise<DOMString> saveGraph(MLGraph graph, optional DOMString key);
-};
-```
-
-
-
-### loadGraph
-The hash key would be required to access the full cross-origin cache.  If a non-hash name is
-used then only the models stored by the same origin would be accessible.
-We assume that user-provided names and hash names could be distinguished easily by their format.
-
-### saveGraph
-Same behavior as before, but now the user-provided key would be optional.  If the user-provided key is
-omitted then the hash is returned in the result string.
-
-### Privacy Considerations
-- The number of "probes" of the cache should be rate-limited to avoid use of cache
-  presence of various models in the cache as fingerprinting information.
-- The presence of an item in the cache in theory could be used for tracking repeat
-  visits by a particular user agent to the same site, by generating a random model
-  and then computing and storing the hash on the server side.   However, note that
-  the API only checks for the existence of a given hash in the cache, it does not
-  provide a list of all items in the cache.  An attacker would have to "guess" at
-  which hash is in the cache, and possibly test them one by one.  The API can limit
-  the number of attempts to retrieve models from the cache to avoid a system trying
-  to exhaustively probe the cache.  This failure can be "soft" e.g. the cache can
-  just stop trying to retrieve data after a certain number of attempts and let all
-  fetches "fail".
+as fingerprinting.  A browser may also not strictly disallow the use of "friendly" names to
+retrieve items from the cache, but may instead choose to require user consent.
 
 ## Implementation Notes
 - This API can be implemented in three ways.  The proposed API is intentially designed to allow
