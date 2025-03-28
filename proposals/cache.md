@@ -83,6 +83,10 @@ If the same graph is "saved" more than once with a different user-provided key t
 latest user-provided key is used and older keys are lost, e.g. the function will act like a "rename".
 The hash key will not change in this case, and the system may also skip recompilation.
 
+If a graph is saved with the same user-provided name as a graph already in the cache the new
+graph will be one accessed by the user-provided name.  The old graph may still be accessible 
+using its hash (e.g. it will not necessarily be automatically deleted).
+
 An implementation may choose not to store any particular model (for example, a model may be too
 large to fit in the available storage).  In this case the method still succeeds but the empty string
 may be returned as the "hash" (to avoid the system having to compute the hash for models that
@@ -132,6 +136,8 @@ This method always succeeds, even if the model was not originally in the cache (
 someone using the delete operation as a cache probe) or is no longer in the cache.
 Idempotent.
 
+Note: an implementation may choose to delete saved models automatically for any reason.
+
 ## deleteSavedGraphs
 Delete all graphs of this origin.  Always succeeds, even if the cache is empty.
 Idempotent.
@@ -145,11 +151,13 @@ protections against fingerprinting and tracking.
 
 If arbitrary user-defined keys are used, then the cache essentially becomes a key-value store,
 and may be subject to the same privacy controls as cookies and localStorage, e.g. requiring
-user consent to use.  So user-defined keys are provided as a convenience feature for the developer but could
+user consent to use.  User-defined keys are provided as a convenience feature for the developer but could
 potentially cause other inconveniences for the user.
 
 For potential extension to the cross-origin use case, use of hashes also prevents the
-use of the cache for data exfiltration.
+use of the cache for data exfiltration, so are mandatory in this case.  A developer using
+user-defined names will not be able to access models loaded in other origins, and so will
+always have to bear the download cost.
 
 ### Privacy Mitigations
 - The WebNN API is already disallowed in third-party contexts, which mitigates
@@ -182,30 +190,29 @@ as fingerprinting.  A browser may also not strictly disallow the use of "friendl
 retrieve items from the cache, but may instead choose to require user consent.
 
 ## Implementation Notes
-- This API can be implemented in three ways.  The proposed API is intentially designed to allow
-  all three:
+- This API can be implemented in (at least) four ways.  The proposed API is intentially designed to allow
+  the following:
    1. A shim around the entire `MLGraph` API that allows the data to build models to be captured
       in a data structure so they can be stored and retrieved from a file.  In this implementation
       "fetching" a model from the cache requires it to be rebuilt by traversing the data structure
       and invoking the native WebNN API.  This approach is slow and inefficient but is portable and
       allows the model to be retargetted to other devices.
-   3. Internal to the WebNN API, the internal representation of the model, in particular the weights and the
+   2. Internal to the WebNN API, the internal representation of the model, in particular the weights and the
       operator graph, can be stored prior to compilation.  In this case fetching the model still requires
       recompilation but does not have the overhead of managing the data in Javascript.  It also allows
       a model to be retargeted to other devices.
-   4. Internal to the WebNN API, the internal representation of the compiled model, including the weights
+   3. Internal to the WebNN API, the internal representation of the compiled model, including the weights
       and the compiled kernels, is stored to a file so that it can be quickly retrieved and run on a
       target device.  This is faster since it avoids compilation overhead, but requires the ability
       to serialize/deserialize a compiled representation which may not be available for all backends.
       The representation is also device-specific.
-- The hash is based on the model, not for the device it is compiled for.  This leads to a corner
-  case where the model is available, but has been compiled for a different device.  In this case the
-  fetch API would fail and the developer might rebuild the model for the new device, and might store
-  the new compiled model in the cache.  A simple implementation might only store one copy of every model
-  (discarding and replacing the older compiled model in this case) but a "better" implementation might
-  store multiple compiled versions and return the one that is the best fit to the provided context.
+   4. No cache. Loads always throw exceptions, and returned "hashes" from Stores are always the empty string.
+- The hash is based on the model, and should not depend on the device it is compiled for.  This leads to the 
+  case where the model is available, but has been compiled for a different device, which might duplicate some
+  storage.  We should allow implementations to report that such models ARE in the cache (although it
+  means models would have to be stored in a portable format, compilation would still be needed, and so on).
 - An implementation may choose to not store some models at all, and may also delete stored models at any
-  time.  The simplest implementation is to store no models so fetches will always fail.  This is
+  time.  The simplest implementation (4 above) is to store no models at all.  This is
   acceptable and would be compatible with the proposal, although obviously would not address the use
   cases.  For systems with finite storage capacity, an implementation can automatically delete older
   models, in which case they would have to be reloaded by the developer.  An implementation may also
@@ -217,19 +224,11 @@ retrieve items from the cache, but may instead choose to require user consent.
   There may, however, be reasons while a developer does not want to allow a model to get saved to disk,
   e.g. proprietary models.  However, as this is a rare case an alternative would be to have a flag
   to mark such models as `uncacheable`, but by default allow caching.
-  In addition, we would also need to add another method, perhaps `hash`, to retrieve the hash value
-  from the built graph.
-- A separate "AI Model Management" class/interface could be used.  However, making the API methods
-  on `MLGraph` and `MLGraphBuilder` is more natural for an object-oriented system.
 - The use of a hash means that the *exact* model specified is fetched.  If there are multiple versions
   of the same model that are functionally equivalent, a system would have to try the variants one
   by one (maybe from newest to oldest) to find if one is in the cache.  As an extension to this API,
-  we could consider allowing `fetch` to take a list of hashes, and allow it to retrieve the model
-  associated with any of them.
-- We *could* use model names, e.g. `llama3.1:70b` rather than hashes.  However, then the name would
-  have to be provided at storage time (so automatic storage would not be possible...) and a developer
-  could abuse the API as a large name-value store.   This also leads to additional risks e.g. for
-  data exfiltration if we ever extend the API to cross-origin caching.  To avoid the inconvenience
+  we could consider allowing `loadGraph` to take a list of hashes, and allow it to retrieve the model
+  associated with any of them. To avoid the inconvenience
   of using hashes, a library could be provided to access a database of hashes for common models.
 
 ## References
