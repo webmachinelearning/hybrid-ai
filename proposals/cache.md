@@ -234,6 +234,9 @@ retrieve items from the cache, but may instead choose to require user consent.
   we could consider allowing `loadGraph` to take a list of hashes, and allow it to retrieve the model
   associated with any of them. To avoid the inconvenience
   of using hashes, a library could be provided to access a database of hashes for common models.
+- There is some overlap of design considerations and motivations with the Cross-Origin Storage (COS)
+  API proposal, see Reference 6.  However this proposal is more focused on models and is a cache,
+  not a general file storage mechanism.
 
 ## References
 1. Thomas Steiner, Google,
@@ -244,3 +247,4 @@ retrieve items from the cache, but may instead choose to require user consent.
 3. W3C Privacy CG. [Client-Side Storage Partitioning](https://github.com/privacycg/storage-partitioning).
 4. Ningxin Hu and Dwayne Robinson (Editors), W3C Web Machine Learning WG. [Web Neural Network API](https://www.w3.org/TR/webnn/).
 5. Michael McCool, [Adapters proposal](adapters.md).
+6. Thomas Steiner, Christian Liebel, and François Beaufort, [Cross-Origin Storage (COS) API (proposal)](https://github.com/explainers-by-googlers/cross-origin-storage)
