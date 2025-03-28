@@ -32,26 +32,27 @@ Avoiding the download process improves the user experience and also reduces the 
 on the network (and the potential cost to the user if data charges are applicable).
 Avoiding the build process improves the user experience by minimizing startup time.
 
-### Use Case 2: Adapters
-Separately an API is being proposed to support adapters [5], based on PEFT representation such as LoRA.
-As a prerequiste to implementing adapters, it must be possible to gain access to a previously downloaded
-model.
-
-## Out of Scope
-The following use case is currently out of scope but may be considered in future work:
-
-### Use Case X1: Cross-Origin Reuse
+### Use Case 2: Cross-Origin Reuse (TENTATIVE)
 Many models may be used by more than one developer, in the same way that software libraries
 may be shared.  Like software libraries, we expect models to be reused by different origins.
 However, models are much larger so the cost of duplicated storage is larger.
 
+This is not as high priority as the above use case and the proposal is designed to
+allow its implementation to be deferred, or not implemented at all in some platforms.
+
+### Use Case 3: Adapters (EXPLORATORY)
+Separately an API is being proposed to support adapters [5], based on PEFT representation such as LoRA.
+As a prerequiste to implementing adapters, it must be possible to gain access to a previously downloaded
+model.
+
 ## Design Considerations
 - Ideally, it should not be possible to use the cache for storage of data other than models.
-  In particular we should avoid situations where the cache can be used for large cookies or trackers.
+  In particular we should avoid situations where the cache can be used for large cookies or trackers,
+  as this may require user consent, etc.
 - Loading a model from the cache should be as efficient as possible.
 - The API should be simple and easy to use.
-- While the proposed API does not support Use Case X1 (Cross-Origin Reuse), ideally it should be possible
-  to extend the API in the future to do so in a backward-compatible way.
+- An application needs to be able to check the cache *before* downloading a model, so an
+  implicit, automatic approach is not possible.
   
 ## Proposed API
 The proposed API is based on a set of methods on `MLContext` objects,
