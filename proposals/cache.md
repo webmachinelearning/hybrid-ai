@@ -1,6 +1,12 @@
 # Cache
 An API to allow WebNN models to be saved to and retrieved from a cache on
-persistent storage. 
+persistent storage.   
+
+NOTE: This proposal supports cross-origin caching, however the group consensus
+is that scope is too broad and we should first focus on the same-origin case,
+in alignment with the Storage Partitioning principle used by other APIs.
+For an updated proposal that narrows the scope to the same-origin case, see
+[localcache.md](localcache.md).
 
 ## Problem Statement
 Models can be large and in many cases we would like to reuse previously downloaded models.
