@@ -1,4 +1,4 @@
-# Cache
+# Cross-Origin Model Cache
 An API to allow WebNN models to be saved to and retrieved from a cache on
 persistent storage.   
 
