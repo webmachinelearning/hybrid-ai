@@ -7,6 +7,8 @@ Storage Partitioning principle used by other local storage APIs.
 For the cross-origin case, see the proposal in [cache.md](cache.md),
 however the group consensus is that this is out of scope for now.
 
+Related Issue: https://github.com/webmachinelearning/webnn/issues/807
+
 ## Problem Statement
 Models can be large and in many cases we would like to reuse previously downloaded models.
 While a loader library can store and retrieve models prior to building model graphs, 
